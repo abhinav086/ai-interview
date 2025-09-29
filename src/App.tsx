@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Users, MessageSquare, Settings, UserCircle } from 'lucide-react'; // Added UserCircle for a potential user menu/settings
+import { Users, MessageSquare, Settings, UserCircle, Trash2 } from 'lucide-react';
 import IntervieweeTab from './components/IntervieweeTab';
 import InterviewerTab from './components/InterviewerTab';
 import WelcomeBackModal from './components/WelcomeBackModal';
 import { Candidate, TabType, AppState } from './types';
-import { saveToStorage, loadFromStorage } from './utils/storage';
+import { saveToStorage, loadFromStorage, clearStorage } from './utils/storage';
 import { calculateScore } from './utils/scoring';
 
 function App() {
@@ -12,8 +12,8 @@ function App() {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [currentCandidateId, setCurrentCandidateId] = useState<string | undefined>();
   const [showWelcomeBack, setShowWelcomeBack] = useState(false);
+  const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-  // Load data from localStorage on app start
   useEffect(() => {
     const savedData = loadFromStorage();
     if (savedData) {
@@ -21,7 +21,6 @@ function App() {
       setCurrentTab(savedData.currentTab);
       setCurrentCandidateId(savedData.currentCandidateId);
       
-      // Show welcome back modal if there's an incomplete interview
       const incompleteCandidate = savedData.candidates.find(
         c => c.status === 'in-progress' || c.status === 'paused'
       );
@@ -32,7 +31,6 @@ function App() {
     }
   }, []);
 
-  // Save data to localStorage whenever state changes
   useEffect(() => {
     const appState: AppState = {
       currentTab,
@@ -72,7 +70,6 @@ function App() {
   };
 
   const handleCandidateUpdate = (updatedCandidate: Candidate) => {
-    // Calculate final score if interview is completed and not already calculated
     if (updatedCandidate.status === 'completed' && !updatedCandidate.finalScore) {
       const scoringDetails = calculateScore(updatedCandidate.interviewAnswers);
       updatedCandidate.finalScore = scoringDetails.overallScore;
@@ -88,6 +85,20 @@ function App() {
 
   const handleCandidateSelect = (candidateId: string) => {
     setCurrentCandidateId(candidateId);
+  };
+
+  const handleResetInterview = () => {
+    setCurrentCandidateId(undefined);
+    setCandidates([]);
+    clearStorage();
+  };
+
+  const handleClearAllData = () => {
+    setCurrentCandidateId(undefined);
+    setCandidates([]);
+    clearStorage();
+    setShowClearConfirm(false);
+    setCurrentTab('interviewee');
   };
 
   const handleWelcomeBackContinue = () => {
@@ -117,20 +128,17 @@ function App() {
   const stats = getTabStats();
 
   return (
-    <div className="min-h-screen bg-gray-100 font-sans antialiased"> {/* Smoother background, better font rendering */}
-      {/* Header */}
-      <header className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-40"> {/* More pronounced shadow */}
+    <div className="h-screen bg-gray-100 font-sans antialiased flex flex-col overflow-hidden">
+      <header className="bg-white shadow-md border-b border-gray-200 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           
-          {/* Brand and Stats */}
-          <div className="flex items-center gap-4"> {/* Increased gap for better spacing */}
-            {/* Logo placeholder - could be an SVG or image */}
-            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md"> {/* Gradient for a modern look */}
-              <MessageSquare className="w-5 h-5 text-white" /> {/* Used MessageSquare as a generic app icon */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg shadow-md">
+              <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-gray-900">Abhinav's Interview Assistant</h1> {/* Stronger title */}
-              <p className="text-sm text-gray-500 mt-0.5"> {/* Subtler stats */}
+              <h1 className="text-xl font-extrabold text-gray-900">Abhinav's Interview Assistant</h1>
+              <p className="text-sm text-gray-500 mt-0.5">
                 <span className="font-medium">{stats.total}</span> candidates • 
                 <span className="font-medium text-green-600 ml-1">{stats.completed} completed</span> • 
                 <span className="font-medium text-blue-600 ml-1">{stats.inProgress} in progress</span>
@@ -138,16 +146,15 @@ function App() {
             </div>
           </div>
 
-          {/* Tab Navigation & User Actions */}
-          <div className="flex items-center gap-4"> {/* Aligned with user actions */}
-            <div className="flex bg-gray-50 rounded-full p-1 shadow-inner"> {/* Pill-shaped tabs, subtle inner shadow */}
+          <div className="flex items-center gap-4">
+            <div className="flex bg-gray-50 rounded-full p-1 shadow-inner">
               <button
                 onClick={() => setCurrentTab('interviewee')}
                 className={`
                   flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ease-in-out
                   ${currentTab === 'interviewee' 
-                    ? 'bg-blue-600 text-white shadow-md' // Stronger active state
-                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50' // Clearer hover
+                    ? 'bg-blue-600 text-white shadow-md' 
+                    : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50'
                   }
                 `}
               >
@@ -167,13 +174,23 @@ function App() {
                 <Users className="w-4 h-4" />
                 Interviewer
                 {stats.pending > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm"> {/* More prominent badge */}
+                  <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                     {stats.pending}
                   </span>
                 )}
               </button>
             </div>
-            {/* Optional: User Settings/Profile */}
+            
+            {candidates.length > 0 && (
+              <button 
+                onClick={() => setShowClearConfirm(true)}
+                className="p-2 rounded-full hover:bg-red-50 transition-colors text-red-600"
+                title="Clear all data"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
+            
             <button className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600">
               <Settings className="w-5 h-5" />
             </button>
@@ -184,13 +201,13 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8"> {/* Added padding to main content */}
+      <main className="flex-1 min-h-0 max-w-7xl w-full mx-auto px-6 py-8">
         {currentTab === 'interviewee' ? (
           <IntervieweeTab
             candidate={currentCandidate}
             onCandidateUpdate={handleCandidateUpdate}
             onCreateCandidate={handleCreateCandidate}
+            onResetInterview={handleResetInterview}
           />
         ) : (
           <InterviewerTab
@@ -201,7 +218,6 @@ function App() {
         )}
       </main>
 
-      {/* Welcome Back Modal */}
       {showWelcomeBack && currentCandidate && (
         <WelcomeBackModal
           candidate={currentCandidate}
@@ -209,6 +225,42 @@ function App() {
           onStartNew={handleWelcomeBackStartNew}
           onClose={handleWelcomeBackClose}
         />
+      )}
+
+      {showClearConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <Trash2 className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Clear All Data?</h3>
+                <p className="text-sm text-gray-600">This action cannot be undone</p>
+              </div>
+            </div>
+            
+            <p className="text-gray-600 mb-6">
+              This will permanently delete all candidate data, interview responses, and scores. 
+              Are you sure you want to continue?
+            </p>
+            
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowClearConfirm(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAllData}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Clear All
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

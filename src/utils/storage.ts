@@ -1,10 +1,11 @@
-import { Candidate, AppState } from '../types';
+import { AppState } from '../types';
 
-const STORAGE_KEY = 'interview-assistant';
+const STORAGE_KEY = 'interview_assistant_data';
 
 export const saveToStorage = (data: AppState): void => {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    // Convert Dates to ISO strings for storage
+    const serializedData = {
       ...data,
       candidates: data.candidates.map(candidate => ({
         ...candidate,
@@ -16,14 +17,16 @@ export const saveToStorage = (data: AppState): void => {
           ...msg,
           timestamp: msg.timestamp.toISOString()
         })),
-        interviewAnswers: candidate.interviewAnswers.map(answer => ({
-          ...answer,
-          timestamp: answer.timestamp.toISOString()
+        interviewAnswers: candidate.interviewAnswers.map(ans => ({
+          ...ans,
+          timestamp: ans.timestamp.toISOString()
         }))
       }))
-    }));
+    };
+    
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(serializedData));
   } catch (error) {
-    console.error('Error saving to localStorage:', error);
+    console.error('Error saving to storage:', error);
   }
 };
 
@@ -33,6 +36,8 @@ export const loadFromStorage = (): AppState | null => {
     if (!data) return null;
     
     const parsed = JSON.parse(data);
+    
+    // Convert ISO strings back to Dates
     return {
       ...parsed,
       candidates: parsed.candidates.map((candidate: any) => ({
@@ -45,14 +50,14 @@ export const loadFromStorage = (): AppState | null => {
           ...msg,
           timestamp: new Date(msg.timestamp)
         })),
-        interviewAnswers: candidate.interviewAnswers.map((answer: any) => ({
-          ...answer,
-          timestamp: new Date(answer.timestamp)
+        interviewAnswers: candidate.interviewAnswers.map((ans: any) => ({
+          ...ans,
+          timestamp: new Date(ans.timestamp)
         }))
       }))
     };
   } catch (error) {
-    console.error('Error loading from localStorage:', error);
+    console.error('Error loading from storage:', error);
     return null;
   }
 };
@@ -61,6 +66,6 @@ export const clearStorage = (): void => {
   try {
     localStorage.removeItem(STORAGE_KEY);
   } catch (error) {
-    console.error('Error clearing localStorage:', error);
+    console.error('Error clearing storage:', error);
   }
 };
