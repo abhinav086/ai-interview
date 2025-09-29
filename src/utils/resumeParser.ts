@@ -1,3 +1,4 @@
+// src/utils/resumeParser.ts
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import mammoth from 'mammoth';
@@ -11,6 +12,28 @@ export interface ParsedResume {
   email?: string;
   phone?: string;
 }
+
+// Define keywords for topic extraction
+const TECH_KEYWORDS = [
+  // Programming Languages
+  'JavaScript', 'TypeScript', 'Python', 'Java', 'C++', 'C#', 'Go', 'Rust', 'PHP', 'Ruby',
+  // Frontend Technologies
+  'React', 'Angular', 'Vue.js', 'HTML', 'CSS', 'SASS', 'LESS', 'Webpack', 'Vite', 'Next.js', 'Nuxt.js',
+  // Backend Technologies
+  'Node.js', 'Express', 'Django', 'Flask', 'Spring Boot', 'ASP.NET', 'FastAPI', 'GraphQL', 'REST',
+  // Databases
+  'MongoDB', 'PostgreSQL', 'MySQL', 'Redis', 'Firebase', 'Cassandra', 'Oracle', 'SQL Server',
+  // DevOps & Cloud
+  'Docker', 'Kubernetes', 'AWS', 'Azure', 'GCP', 'Jenkins', 'GitLab CI', 'GitHub Actions', 'CI/CD', 'Terraform', 'Ansible',
+  // Frameworks & Libraries
+  'jQuery', 'Lodash', 'Express.js', 'Pandas', 'NumPy', 'TensorFlow', 'PyTorch', 'Scikit-learn',
+  // Tools & Concepts
+  'Git', 'SDLC', 'Agile', 'Scrum', 'Jira', 'Linux', 'Bash', 'Algorithms', 'Data Structures', 'OOP', 'Microservices',
+  // AI/ML related (as seen in your example)
+  'AI', 'Machine Learning', 'Deep Learning', 'NLP', 'Computer Vision',
+  // Other relevant terms
+  'Full Stack', 'Frontend', 'Backend', 'API', 'Microservices', 'Testing', 'Jest', 'Cypress', 'Selenium'
+];
 
 export const parseResume = async (file: File): Promise<ParsedResume> => {
   let text = '';
@@ -178,4 +201,26 @@ const extractName = (text: string): string | undefined => {
   
   console.log('No name found in resume');
   return undefined;
+};
+
+// NEW FUNCTION: Extract topics from resume text
+export const extractTopicsFromResumeText = (resumeText: string): string[] => {
+  if (!resumeText) return [];
+
+  // Normalize the text for comparison (lowercase, remove punctuation around keywords)
+  const normalizedText = resumeText.toLowerCase();
+
+  const foundTopics = new Set<string>();
+
+  TECH_KEYWORDS.forEach(keyword => {
+    // Create a case-insensitive, word-boundary aware regex for the keyword
+    // This helps avoid partial matches within other words (e.g., finding 'React' in 'Abstract')
+    const regex = new RegExp(`\\b${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'gi');
+    if (regex.test(normalizedText)) {
+      foundTopics.add(keyword);
+    }
+  });
+
+  // Convert Set to Array and return
+  return Array.from(foundTopics);
 };

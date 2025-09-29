@@ -1,3 +1,4 @@
+// src/components/Timer.tsx
 import React, { useEffect, useState } from 'react';
 import { Clock, AlertTriangle } from 'lucide-react';
 

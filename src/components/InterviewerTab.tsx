@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Filter, Users, Clock, CheckCircle, AlertCircle, Eye, Download, Star } from 'lucide-react';
-import { Candidate, ScoringDetails } from '../types';
-import { calculateScore } from '../utils/scoring';
+import { Search, Users, Clock, CheckCircle, AlertCircle, Eye, Download, Star } from 'lucide-react';
+import { Candidate } from '../types';
 
 interface InterviewerTabProps {
   candidates: Candidate[];
@@ -32,8 +31,8 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
         case 'name':
           return a.name.localeCompare(b.name);
         case 'score':
-          const aScore = a.finalScore || (a.status === 'completed' ? calculateScore(a.interviewAnswers).overallScore : 0);
-          const bScore = b.finalScore || (b.status === 'completed' ? calculateScore(b.interviewAnswers).overallScore : 0);
+          const aScore = a.finalScore || 0;
+          const bScore = b.finalScore || 0;
           return bScore - aScore;
         case 'date':
         default:
@@ -43,9 +42,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
   }, [candidates, searchTerm, statusFilter, sortBy]);
 
   const selectedCandidate = selectedCandidateId ? candidates.find(c => c.id === selectedCandidateId) : null;
-  const scoringDetails = selectedCandidate && selectedCandidate.status === 'completed' 
-    ? selectedCandidate.scoringDetails || calculateScore(selectedCandidate.interviewAnswers)
-    : null;
+  const scoringDetails = selectedCandidate?.scoringDetails || null;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -127,8 +124,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
           </div>
         ) : (
           filteredAndSortedCandidates.map((candidate) => {
-            const score = candidate.finalScore || 
-              (candidate.status === 'completed' ? calculateScore(candidate.interviewAnswers).overallScore : null);
+            const score = candidate.finalScore || null;
             
             return (
               <div
@@ -223,7 +219,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-600 mb-1">Progress</h3>
-              <p className="text-gray-800">{selectedCandidate.currentQuestionIndex} / 6 questions</p>
+              <p className="text-gray-800">{selectedCandidate.interviewAnswers.length} questions answered</p>
             </div>
             <div className="bg-gray-50 p-4 rounded-lg">
               <h3 className="text-sm font-medium text-gray-600 mb-1">Duration</h3>
@@ -239,7 +235,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
         {/* Scoring Details */}
         {scoringDetails && (
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Performance Analysis</h3>
+            <h3 className="text-xl font-bold text-gray-800 mb-6">AI Performance Analysis</h3>
             
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
               <div className="bg-blue-50 p-4 rounded-lg text-center">
@@ -293,7 +289,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
             </div>
 
             <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-semibold text-gray-800 mb-2">Recommendation</h4>
+              <h4 className="font-semibold text-gray-800 mb-2">AI Recommendation</h4>
               <span className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${getRecommendationColor(scoringDetails.recommendation)}`}>
                 {scoringDetails.recommendation}
               </span>
@@ -316,11 +312,13 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
                       <span className="text-sm font-medium text-blue-600">{answer.score}/100</span>
                     </div>
                   </div>
-                  <p className="text-gray-600 mb-3">{answer.question}</p>
+                  <p className="text-gray-600 mb-3 font-medium">{answer.question}</p>
                   <div className="bg-gray-50 p-4 rounded-lg mb-2">
-                    <p className="text-gray-800">{answer.answer}</p>
+                    <p className="text-gray-800 whitespace-pre-wrap">{answer.answer}</p>
                   </div>
-                  <p className="text-sm text-gray-600">{answer.feedback}</p>
+                  <div className="bg-blue-50 p-3 rounded-lg">
+                    <p className="text-sm text-gray-700"><span className="font-semibold">AI Feedback:</span> {answer.feedback}</p>
+                  </div>
                 </div>
               ))}
             </div>
@@ -331,7 +329,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
+    <div className="h-full overflow-auto">
       <div className="max-w-7xl mx-auto">
         {viewMode === 'list' ? (
           <div className="space-y-6">
@@ -339,7 +337,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
             {selectedCandidateId && (
               <button
                 onClick={() => setViewMode('details')}
-                className="fixed bottom-6 right-6 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+                className="fixed bottom-6 right-6 bg-blue-600 text-white px-6 py-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center gap-2 z-10"
               >
                 <Eye className="w-4 h-4" />
                 View Details
@@ -350,7 +348,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
           <div className="space-y-6">
             <button
               onClick={() => setViewMode('list')}
-              className="mb-4 text-blue-600 hover:text-blue-700 flex items-center gap-2"
+              className="mb-4 text-blue-600 hover:text-blue-700 flex items-center gap-2 font-medium"
             >
               ← Back to List
             </button>

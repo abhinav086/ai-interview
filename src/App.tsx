@@ -69,11 +69,37 @@ function App() {
     setCurrentCandidateId(newCandidate.id);
   };
 
-  const handleCandidateUpdate = (updatedCandidate: Candidate) => {
+  const handleCandidateUpdate = async (updatedCandidate: Candidate) => {
+    // Generate AI evaluation when interview is completed
     if (updatedCandidate.status === 'completed' && !updatedCandidate.finalScore) {
-      const scoringDetails = calculateScore(updatedCandidate.interviewAnswers);
-      updatedCandidate.finalScore = scoringDetails.overallScore;
-      updatedCandidate.scoringDetails = scoringDetails;
+      try {
+        const scoringDetails = await calculateScore(
+          updatedCandidate.interviewAnswers,
+          updatedCandidate.name
+        );
+        updatedCandidate.finalScore = scoringDetails.overallScore;
+        updatedCandidate.scoringDetails = scoringDetails;
+      } catch (error) {
+        console.error('Error calculating AI score:', error);
+        // Fallback to basic scoring if AI fails
+        const avgScore = updatedCandidate.interviewAnswers.length > 0
+          ? Math.round(
+              updatedCandidate.interviewAnswers.reduce((sum, a) => sum + a.score, 0) / 
+              updatedCandidate.interviewAnswers.length
+            )
+          : 0;
+        
+        updatedCandidate.finalScore = avgScore;
+        updatedCandidate.scoringDetails = {
+          overallScore: avgScore,
+          technicalScore: avgScore,
+          communicationScore: avgScore,
+          problemSolvingScore: avgScore,
+          strengths: ['Completed all interview questions', 'Demonstrated understanding'],
+          improvements: ['Continue developing technical skills', 'Practice explaining concepts'],
+          recommendation: avgScore >= 70 ? 'Hire' : 'No Hire'
+        };
+      }
     }
 
     setCandidates(prev => 
@@ -137,7 +163,7 @@ function App() {
               <MessageSquare className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold text-gray-900">Abhinav's Interview Assistant</h1>
+              <h1 className="text-xl font-extrabold text-gray-900">Abhinav's AI Interview Assistant</h1>
               <p className="text-sm text-gray-500 mt-0.5">
                 <span className="font-medium">{stats.total}</span> candidates • 
                 <span className="font-medium text-green-600 ml-1">{stats.completed} completed</span> • 
@@ -191,12 +217,12 @@ function App() {
               </button>
             )}
             
-            <button className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600">
+            {/* <button className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600">
               <Settings className="w-5 h-5" />
-            </button>
-            <button className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600">
+            </button> */}
+            {/* <button className="p-2 rounded-full hover:bg-gray-200 transition-colors text-gray-600">
               <UserCircle className="w-5 h-5" />
-            </button>
+            </button> */}
           </div>
         </div>
       </header>
@@ -241,7 +267,7 @@ function App() {
             </div>
             
             <p className="text-gray-600 mb-6">
-              This will permanently delete all candidate data, interview responses, and scores. 
+              This will permanently delete all candidate data, interview responses, and AI evaluations. 
               Are you sure you want to continue?
             </p>
             
