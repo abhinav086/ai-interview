@@ -201,10 +201,7 @@ const InterviewerTab: React.FC<InterviewerTabProps> = ({
               <span className={`px-3 py-1 rounded-full text-sm font-medium capitalize ${getStatusColor(selectedCandidate.status)}`}>
                 {selectedCandidate.status.replace('-', ' ')}
               </span>
-              <button className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2">
-                <Download className="w-4 h-4" />
-                Export
-              </button>
+  
             </div>
           </div>
           
